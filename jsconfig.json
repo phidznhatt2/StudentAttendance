@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "baseUrl": ".",
+    "paths": {
+      "_api/*": ["src/api/*"],
+      "_assets/*": ["src/assets/*"],
+      "_components/*": ["src/components/*"],
+      "_constant/*": ["src/constant/*"],
+      "_atoms/*": ["src/components/atoms/*"],
+      "_molecules/*": ["src/components/molecules/*"],
+      "_organisms/*": ["src/components/organisms/*"],
+      "_redux/*": ["src/redux/*"],
+      "_screens/*": ["src/screens/*"],
+      "_navigation/*": ["src/navigation/*"],
+      "_services/*": ["src/services/*"],
+      "_styles/*": ["src/styles/*"],
+      "_utils/*": ["src/utils/*"],
+      "_hook/*": ["src/hook/*"],
+      "_context/*": ["src/context/*"]
+    },
+  },
+  "exclude": [
+    "node_modules",      
+  ]   
+}
