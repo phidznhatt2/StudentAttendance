@@ -5,7 +5,6 @@ import {
   SIGNUP_USER,
   SIGNUP_USER_SUCCESS,
   SIGNUP_USER_ERROR,
-  LOGOUT_USER,
   ADD_DEVICE_USER,
   ADD_DEVICE_USER_SUCCESS,
   ADD_DEVICE_USER_ERROR,
@@ -24,6 +23,13 @@ import {
   DEL_DEVICE_USER,
   DEL_DEVICE_USER_SUCCESS,
   DEL_DEVICE_USER_ERROR,
+  REGISTER_COURSE,
+  REGISTER_COURSE_SUCCESS,
+  REGISTER_COURSE_ERROR,
+  CHANGE_PROFILE,
+  SAVE_PROFILE,
+  SAVE_PROFILE_SUCCESS,
+  SAVE_PROFILE_ERROR,
 } from '_constant';
 import _ from 'lodash';
 
@@ -31,9 +37,13 @@ const initialState = {
   isLoading: false,
   isLoadingEq: false,
   isLoadingSt: false,
-  isActing: false,
+  isDelDevice: false,
+  isAddDevice: false,
   loginSuccess: false,
+  isRegister: false,
+  isSaving: false,
   userInfo: {},
+  userSetting: {},
   history: {
     status: false,
   },
@@ -56,24 +66,15 @@ const User = (state = initialState, action) => {
       return _.assign({}, state, { isLoading: false });
 
     case ADD_DEVICE_USER:
-      return _.assign({}, state, { isLoading: true });
+      return _.assign({}, state, { isAddDevice: true });
     case ADD_DEVICE_USER_SUCCESS:
       const { status, deviceInfo } = action.payload;
       if (status) {
-        if (_.isEmpty(state.userInfo.studentEquipment)) {
-          const studentEquipment = [];
-          studentEquipment.push({ ...deviceInfo, status: true });
-          return _.assign(
-            {},
-            { ...state, userInfo: { ...state.userInfo, studentEquipment } },
-            { isLoading: false },
-          );
-        }
         state.userInfo.studentEquipment.push({ ...deviceInfo, status: true });
       }
-      return _.assign({}, state, { isLoading: false });
+      return _.assign({}, state, { isAddDevice: false });
     case ADD_DEVICE_USER_ERROR:
-      return _.assign({}, state, { isLoading: false });
+      return _.assign({}, state, { isAddDevice: false });
 
     case GET_USER_BY_ID:
       return _.assign({}, state, { isLoading: true });
@@ -81,6 +82,12 @@ const User = (state = initialState, action) => {
       return _.assign({}, state, {
         isLoading: false,
         userInfo: { ...action.payload },
+        userSetting: {
+          id_User: action.payload.id,
+          fullName: action.payload.fullName,
+          email: action.payload.email,
+          ThumbnailImage: action.payload.urlImg,
+        },
       });
     case GET_USER_BY_ID_ERROR:
       return _.assign({}, state, { isLoading: false });
@@ -119,7 +126,7 @@ const User = (state = initialState, action) => {
       return _.assign({}, state, { isLoadingSt: false });
 
     case DEL_DEVICE_USER:
-      return _.assign({}, state, { isActing: true });
+      return _.assign({}, state, { isDelDevice: true });
     case DEL_DEVICE_USER_SUCCESS:
       const { statusDel, idBle } = action.payload;
       const { studentEquipment } = state.userInfo;
@@ -132,14 +139,33 @@ const User = (state = initialState, action) => {
       };
 
       return _.assign({}, state, {
-        isActing: false,
+        isDelDevice: false,
         userInfo: {
           ...state.userInfo,
           studentEquipment: [...studentEquipment],
         },
       });
     case DEL_DEVICE_USER_ERROR:
-      return _.assign({}, state, { isActing: false });
+      return _.assign({}, state, { isDelDevice: false });
+
+    case REGISTER_COURSE:
+      return _.assign({}, state, { isRegister: true });
+    case REGISTER_COURSE_SUCCESS:
+      return _.assign({}, state, { isRegister: false });
+    case REGISTER_COURSE_ERROR:
+      return _.assign({}, state, { isRegister: false });
+
+    case CHANGE_PROFILE:
+      return _.assign({}, state, {
+        userSetting: { ...state.userSetting, ...action.payload },
+      });
+
+    case SAVE_PROFILE:
+      return _.assign({}, state, { isSaving: true });
+    case SAVE_PROFILE_SUCCESS:
+      return _.assign({}, state, { isSaving: false });
+    case SAVE_PROFILE_ERROR:
+      return _.assign({}, state, { isSaving: false });
     default:
       return state;
   }

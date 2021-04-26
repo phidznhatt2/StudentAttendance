@@ -73,22 +73,21 @@ const AttendanceOffline = () => {
           return false;
         });
 
-      if (!enabled) {
-        requestEnabled();
-      } else {
-        setBluetoothEnabled(enabled);
-      }
+      setBluetoothEnabled(enabled);
     } catch (error) {
       setBluetoothEnabled(false);
     }
   };
 
-  const requestEnabled = () => {
-    try {
-      BLEAdvertiser.enableAdapter();
-    } catch (error) {
-      Toast(`Error occurred while enabling bluetooth: ${error.message}`);
-    }
+  const requestEnabled = callBack => {
+    BluetoothStateManager.requestToEnable()
+      .then(result => {
+        /* console.log(result); */
+        callBack();
+      })
+      .catch(err => {
+        /* console.log(err); */
+      });
   };
 
   useEffect(async () => {
@@ -99,6 +98,9 @@ const AttendanceOffline = () => {
     const eventEmitter = new NativeEventEmitter(NativeModules.BLEAdvertiser);
     const onBTStatusChange = eventEmitter.addListener('onBTStatusChange', e => {
       setBluetoothEnabled(e.enabled);
+      if (!e.enabled) {
+        stopAttendance();
+      }
     });
 
     await AsyncStorage.getItem('idBle').then(id => setIdBle(id));
@@ -150,12 +152,16 @@ const AttendanceOffline = () => {
     const checkPermission = await requestLocationPermission();
     if (checkPermission) {
       if (!bluetoothEnabled) {
-        requestEnabled();
+        requestEnabled(onStartScan);
       } else {
-        await startAdvertising();
-        setDiscovering(true);
+        onStartScan();
       }
     }
+  };
+
+  const onStartScan = async () => {
+    await startAdvertising();
+    setDiscovering(true);
   };
 
   const stopAttendance = () => {
@@ -163,7 +169,7 @@ const AttendanceOffline = () => {
     setDiscovering(false);
   };
 
-  const title = discovering ? 'Đang điểm danh (dừng)' : 'Điểm danh';
+  const title = discovering ? 'Đang điểm danh' : 'Điểm danh';
   const toggleDiscovery = discovering
     ? () => stopAttendance()
     : () => startAttendance();

@@ -31,20 +31,29 @@ import { getUniqueId } from 'react-native-device-info';
 const manager = new BleManager();
 
 export async function requestLocationPermission() {
+  const checkLocationPermission = PermissionsAndroid.check(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+  );
+
+  if (checkLocationPermission === PermissionsAndroid.RESULTS.GRANTED) {
+    return true;
+  }
   try {
     if (Platform.OS === 'android' && Platform.Version >= 23) {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       );
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('[Permissions]', 'Location Permission granted');
-      } else {
-        console.log('[Permissions]', 'Location Permission denied');
+        return true;
       }
+      return false;
     }
   } catch (err) {
     console.warn(err);
+    return false;
   }
+
+  return false;
 }
 
 const Toast = msg => {
@@ -73,23 +82,16 @@ const Attendance = props => {
         });
 
       setBluetoothEnabled(enabled);
-
-      /*       if (!enabled) {
-        setTimeout(() => {
-          requestEnabled();
-        }, 1000);
-      } else {
-        setBluetoothEnabled(enabled);
-      } */
     } catch (error) {
       setBluetoothEnabled(false);
     }
   };
 
-  const requestEnabled = () => {
+  const requestEnabled = callBack => {
     BluetoothStateManager.requestToEnable()
       .then(result => {
         /* console.log(result); */
+        callBack();
       })
       .catch(err => {
         /* console.log(err); */
@@ -106,9 +108,6 @@ const Attendance = props => {
   }, []);
 
   useEffect(async () => {
-    // request location
-    await requestLocationPermission();
-
     // check init status bluetooth
     await checkBluetootEnabled();
 
@@ -128,43 +127,42 @@ const Attendance = props => {
     };
   }, []);
 
-  const scanAdvertising = () => {
+  const scanAdvertising = async () => {
     const { id_EquipmentTeacher: idEquipmentTeacher } = props.user.history;
 
     manager.startDeviceScan(null, null, (error, device) => {
       // Location services are disabled
-      if (!_.isNull(device.serviceUUIDs)) {
-        const uuid = device.serviceUUIDs[0];
-        if (uuid === idEquipmentTeacher) {
-          setIsDevice(true);
+      if (!_.isNull(device)) {
+        if (!_.isNull(device.serviceUUIDs)) {
+          const uuid = device.serviceUUIDs[0];
+          if (uuid === idEquipmentTeacher) {
+            setIsDevice(true);
+            stopAttendance();
+          }
+        }
+
+        if (error) {
+          console.log(error);
           stopAttendance();
         }
-      }
-
-      if (error) {
-        console.log(error);
-        stopAttendance();
       }
     });
   };
 
   const startAttendance = async () => {
-    PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-    )
-      .then(async response => {
-        if (response) {
-          if (!bluetoothEnabled) {
-            requestEnabled();
-          } else {
-            scanAdvertising();
-            setDiscovering(true);
-          }
-        } else {
-          await requestLocationPermission();
-        }
-      })
-      .catch(error => console.log(error));
+    const checkPermission = await requestLocationPermission();
+    if (checkPermission) {
+      if (!bluetoothEnabled) {
+        requestEnabled(onStartScan);
+      } else {
+        onStartScan();
+      }
+    }
+  };
+
+  const onStartScan = async () => {
+    await scanAdvertising();
+    setDiscovering(true);
   };
 
   const stopAttendance = () => {
@@ -198,7 +196,7 @@ const Attendance = props => {
     props.attendanceStudent({ data, message });
   };
 
-  const title = discovering ? 'Đang điểm danh (dừng)' : 'Điểm danh';
+  const title = discovering ? 'Đang điểm danh' : 'Điểm danh';
   const toggleDiscovery = discovering
     ? () => stopAttendance()
     : () => startAttendance();
@@ -236,15 +234,21 @@ const Attendance = props => {
                 </View>
               </ScrollView>
               {Platform.OS !== 'ios' ? (
-                <View>
-                  <Button block onPress={toggleDiscovery} title={title} />
+                <View style={{ flexDirection: 'row', margin: 10 }}>
+                  <Button
+                    block
+                    onPress={toggleDiscovery}
+                    title={title}
+                    containerStyle={{ width: '50%' }}
+                  />
                   <Button
                     block
                     onPress={saveAttendance}
                     title="Lưu"
-                    containerStyle={{ marginTop: 10 }}
                     loading={isActing}
                     disabled={!isDevice}
+                    containerStyle={{ width: '50%' }}
+                    buttonStyle={{ backgroundColor: '#5BB85C' }}
                   />
                 </View>
               ) : undefined}

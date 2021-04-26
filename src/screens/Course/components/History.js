@@ -27,9 +27,8 @@ const Course = props => {
       .addListener('tabPress', e => {
         if (isChangingProfile()) {
           e.preventDefault();
-
           Alert.alert('Thông báo', 'Bạn có muốn hủy thay đổi?', [
-            { text: 'Không', style: 'cancel', onPress: () => true },
+            { text: 'Không', style: 'cancel' },
             {
               text: 'Hủy thay đổi',
               onPress: () => {
@@ -74,78 +73,58 @@ const Course = props => {
   };
 
   const renderCourse = courseList =>
-    courseList.map(
-      (l, i) =>
-        l.status && (
-          <ListItem
-            key={i}
-            Component={TouchableScale}
-            friction={90}
-            tension={100}
-            activeScale={0.95} //
-            linearGradientProps={{
-              colors: ['#ECE9E6', '#fff'],
-              start: { x: 0, y: 0 },
-              end: { x: 1, y: 0 },
-            }}
-            ViewComponent={LinearGradient}
-            containerStyle={styles.listContainer}>
-            <ListItem.Content style={styles.content}>
-              <ListItem.Title style={styles.title}>
-                {l.nameSubject}
-              </ListItem.Title>
-              <ListItem.Subtitle style={[styles.subTitle, { marginBottom: 5 }]}>
-                <View style={styles.subView}>
-                  <Icon
-                    style={styles.icon}
-                    name="school"
-                    type="material-community"
-                    size={16}
-                    color="#797979"
-                  />
-                  <Text style={styles.text}>{l.nameCourse}</Text>
-                </View>
-              </ListItem.Subtitle>
-              <ListItem.Subtitle style={[styles.subTitle, { marginBottom: 5 }]}>
-                <View style={styles.subView}>
-                  <Icon
-                    style={styles.icon}
-                    name="chalkboard-teacher"
-                    type="font-awesome-5"
-                    size={14}
-                    color="#797979"
-                  />
-                  <Text style={styles.text}>{l.nameTeacher}</Text>
-                </View>
-              </ListItem.Subtitle>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Icon
-                    style={styles.icon}
-                    name="progress-clock"
-                    type="material-community"
-                    size={16}
-                    color="#797979"
-                  />
-                  <Text style={{ fontSize: 14, color: '#797979' }}>
-                    BĐ:&nbsp;{moment(l.dateBegin).format('DD/MM/YYYY')}
-                  </Text>
-                </View>
-                <View>
-                  <Text style={{ fontSize: 14, color: '#797979' }}>
-                    KT:&nbsp;{moment(l.dateEnd).format('DD/MM/YYYY')}
-                  </Text>
-                </View>
-              </View>
-            </ListItem.Content>
-          </ListItem>
-        ),
-    );
+    courseList.map((l, i) => (
+      <ListItem
+        key={i}
+        Component={TouchableScale}
+        friction={90}
+        tension={100}
+        activeScale={0.95} //
+        linearGradientProps={{
+          colors: ['#ECE9E6', '#fff'],
+          start: { x: 0, y: 0 },
+          end: { x: 1, y: 0 },
+        }}
+        ViewComponent={LinearGradient}
+        containerStyle={styles.listContainer}>
+        <ListItem.Content style={styles.content}>
+          <ListItem.Title style={styles.title}>{l.nameSubject}</ListItem.Title>
+          <ListItem.Subtitle style={[styles.subTitle, { marginBottom: 5 }]}>
+            <View style={styles.subView}>
+              <Icon
+                style={styles.icon}
+                name="school"
+                type="material-community"
+                size={16}
+                color="#797979"
+              />
+              <Text style={styles.text}>{l.nameCourse}</Text>
+            </View>
+          </ListItem.Subtitle>
+          <ListItem.Subtitle style={[styles.subTitle, { marginBottom: 5 }]}>
+            <View style={styles.subView}>
+              <Icon
+                style={styles.icon}
+                name="chalkboard-teacher"
+                type="font-awesome-5"
+                size={14}
+                color="#797979"
+              />
+              <Text style={styles.text}>{l.nameTeacher}</Text>
+            </View>
+          </ListItem.Subtitle>
+        </ListItem.Content>
+        <View style={{ justifyContent: 'flex-end' }}>
+          <Text
+            style={[
+              styles.text,
+              { fontSize: 14, color: l.status ? '#797979' : '#FF464A' },
+            ]}>
+            {l.status ? 'Đã đăng ký' : 'Đang xử lý'}
+          </Text>
+        </View>
+      </ListItem>
+    ));
 
   return (
     <View style={styles.container}>

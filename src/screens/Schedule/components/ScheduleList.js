@@ -8,6 +8,7 @@ import {
   View,
   Text,
 } from 'react-native';
+import AsyncStorage from '@react-native-community/async-storage';
 import { ListItem, Icon } from 'react-native-elements';
 import TouchableScale from 'react-native-touchable-scale';
 import LinearGradient from 'react-native-linear-gradient';
@@ -169,9 +170,10 @@ const ScheduleList = props => {
   const { key: date } = props.route;
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const { id } = props.user.userInfo;
-    props.getScheduleByDate({ date, id });
+  useEffect(async () => {
+    await AsyncStorage.getItem('uuid').then(id =>
+      props.getScheduleByDate({ date, id }),
+    );
   }, []);
 
   const onRefresh = () => {

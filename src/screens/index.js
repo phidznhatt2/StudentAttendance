@@ -7,3 +7,8 @@ export { default as SettingScreen } from './Setting';
 export { default as ScheduleScreen } from './Schedule';
 export { default as AttendanceScreen } from './Schedule/components/Attendance';
 export { default as AttendanceOffScreen } from './AttendanceOff';
+export { default as SignUpCourseScreen } from './Course/components/SignUp';
+export { default as CourseBySubjectScreen } from './Course/components/CourseBySubject';
+export { default as DeviceSettingScreen } from './Setting/screens/Device';
+export { default as NameSettingScreen } from './Setting/screens/Name';
+export { default as HistoryCourseScreen } from './Course/components/History';

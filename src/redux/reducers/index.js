@@ -3,12 +3,14 @@ import { LOGOUT_USER } from '_constant';
 import user from './users';
 import course from './courses';
 import schedule from './schedules';
+import subject from './subjects';
 
 // Combine all reducers.
 const appReducers = combineReducers({
   user,
   course,
   schedule,
+  subject,
 });
 
 const rootReducer = (state, action) => {

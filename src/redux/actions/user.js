@@ -26,6 +26,13 @@ import {
   DEL_DEVICE_USER,
   DEL_DEVICE_USER_SUCCESS,
   DEL_DEVICE_USER_ERROR,
+  REGISTER_COURSE,
+  REGISTER_COURSE_SUCCESS,
+  REGISTER_COURSE_ERROR,
+  CHANGE_PROFILE,
+  SAVE_PROFILE,
+  SAVE_PROFILE_SUCCESS,
+  SAVE_PROFILE_ERROR,
 } from '_constant';
 import AsyncStorage from '@react-native-community/async-storage';
 import { getUniqueId } from 'react-native-device-info';
@@ -53,13 +60,13 @@ const createActionLoginUser = type => payload => dispatch => {
 };
 
 const createActionSignupUser = type => payload => dispatch => {
-  const { data, message } = payload;
+  const { data, messageSuccess, message } = payload;
   dispatch({ type });
   apiUser
     .signupUser(data)
     .then(res => {
       dispatch({ type: SIGNUP_USER_SUCCESS, payload: res.data });
-      message(res.data.message);
+      messageSuccess(res.data.message);
     })
     .catch(err => {
       dispatch({ type: SIGNUP_USER_ERROR, payload: err.response.data });
@@ -90,7 +97,8 @@ const createActionAddDeviceUser = type => payload => dispatch => {
     })
     .catch(err => {
       dispatch({ type: ADD_DEVICE_USER_ERROR, payload: err.response.data });
-      message(err.response.data.message);
+      // message(err.response.data.message);
+      message('Thiết bị này đã được đăng ký bởi người dùng khác!');
     });
 };
 
@@ -106,22 +114,28 @@ const createActionGetUserById = type => payload => dispatch => {
         ite => ite.id_Equipment === getUniqueId(),
       );
 
-      if (!_.isEmpty(equipment)) {
-        AsyncStorage.setItem('idBle', equipment.id_BLE);
-      } else if (showAlert) {
-        setTimeout(() => {
-          showAlert();
-        }, 1000);
+      if (showAlert) {
+        if (!_.isEmpty(equipment)) {
+          AsyncStorage.setItem('idBle', equipment.id_BLE);
+        } else {
+          setTimeout(() => {
+            showAlert();
+          }, 1000);
+        }
       }
     })
     .catch(err => {
       dispatch({ type: GET_USER_BY_ID_ERROR, payload: err });
       AsyncStorage.getItem('idBle').then(idBle => {
         if (!_.isNull(idBle)) {
-          Alert.alert('Lỗi kết nối', 'Điểm danh khi không sử dụng mạng!', [
-            { text: 'Thử lại', onPress: () => RNRestart.Restart() },
-            { text: 'Điểm danh', onPress: onAttendance },
-          ]);
+          Alert.alert(
+            'Lỗi kết nối',
+            'Điểm danh khi không sử dụng mạng internet!',
+            [
+              { text: 'Thử lại', onPress: () => RNRestart.Restart() },
+              { text: 'Điểm danh', onPress: onAttendance },
+            ],
+          );
         } else {
           Alert.alert(
             'Lỗi kết nối',
@@ -190,7 +204,7 @@ const createActionGetStatusAttendance = type => payload => dispatch => {
 };
 
 const createActionDelDeviceUser = type => payload => dispatch => {
-  const { data, closeModal } = payload;
+  const { data, message } = payload;
   dispatch({ type });
   apiUser
     .delDeviceUser(data)
@@ -199,11 +213,63 @@ const createActionDelDeviceUser = type => payload => dispatch => {
         type: DEL_DEVICE_USER_SUCCESS,
         payload: { statusDel: false, idBle: data.id_BLE },
       });
-      closeModal();
+      message('Yêu cầu của bạn đã được gửi đến giáo viên bộ môn!');
     })
     .catch(err => {
-      console.log(err);
       dispatch({ type: DEL_DEVICE_USER_ERROR, payload: err.response.data });
+      message(err.response.message);
+    });
+};
+
+const createActionRegisterCourse = type => payload => dispatch => {
+  const { message, ...data } = payload;
+  dispatch({ type });
+  apiUser
+    .registerCourse(data)
+    .then(res => {
+      dispatch({
+        type: REGISTER_COURSE_SUCCESS,
+        payload: true,
+      });
+      message('Đăng ký khóa học thành công!');
+    })
+    .catch(err => {
+      dispatch({ type: REGISTER_COURSE_ERROR, payload: err.response.data });
+      message('Bạn đã đăng ký khóa học này rồi!');
+    });
+};
+
+const createActionChangeProfile = type => payload => dispatch => {
+  const { data, onNavigate } = payload;
+  dispatch({ type, payload: data });
+  if (onNavigate) {
+    onNavigate();
+  }
+};
+
+const createActionSaveProfile = type => payload => dispatch => {
+  const { messageSuccess, messageError, data } = payload;
+  const { id_User, fullName, email, ThumbnailImage } = data;
+
+  const formData = new FormData();
+  formData.append('id_User', id_User);
+  formData.append('fullName', fullName);
+  formData.append('email', email);
+  formData.append('ThumbnailImage', ThumbnailImage);
+
+  dispatch({ type });
+  apiUser
+    .saveProfile(formData)
+    .then(res => {
+      dispatch({
+        type: SAVE_PROFILE_SUCCESS,
+        payload: res.data,
+      });
+      messageSuccess(res.data.message);
+    })
+    .catch(err => {
+      dispatch({ type: SAVE_PROFILE_ERROR, payload: err.response.data });
+      messageError(err.response.message);
     });
 };
 
@@ -222,3 +288,6 @@ export const getStatusAttendance = createActionGetStatusAttendance(
   GET_STATUS_ATTENDANCE,
 );
 export const delDeviceUser = createActionDelDeviceUser(DEL_DEVICE_USER);
+export const registerCourse = createActionRegisterCourse(REGISTER_COURSE);
+export const changeProfile = createActionChangeProfile(CHANGE_PROFILE);
+export const saveProfile = createActionSaveProfile(SAVE_PROFILE);

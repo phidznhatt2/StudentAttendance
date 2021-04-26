@@ -126,8 +126,12 @@ const LoginScreen = props => {
 };
 
 LoginScreen.propTypes = {
+  loginUser: PropTypes.func,
   navigation: PropTypes.shape({
     navigate: PropTypes.func,
+  }),
+  user: PropTypes.shape({
+    isLoading: PropTypes.any,
   }),
 };
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Platform,
+  PermissionsAndroid,
   Animated,
   TouchableOpacity,
   ScrollView,
@@ -7,11 +9,33 @@ import {
   Text,
   StyleSheet,
   Dimensions,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-community/async-storage';
 import { TabView, SceneMap } from 'react-native-tab-view';
 import moment from 'moment';
 import _ from 'lodash';
+import { connect } from 'react-redux';
+import { getUserById, changeProfile } from '_redux/actions/user';
+import AwesomeAlert from 'react-native-awesome-alerts';
 import { ScheduleList } from './components';
+
+export async function requestLocationPermission() {
+  try {
+    if (Platform.OS === 'android' && Platform.Version >= 23) {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('[Permissions]', 'Location Permission granted');
+      } else {
+        console.log('[Permissions]', 'Location Permission denied');
+      }
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+}
 
 const { width: w, height: h } = Dimensions.get('window');
 
@@ -43,10 +67,11 @@ const getScheduleTime = () => {
 
 getScheduleTime();
 
-const Schedule = () => {
+const Schedule = props => {
   const [index, setIndex] = useState(0);
   const [routes] = useState(initRoutes);
   const [orientation, setOrientation] = useState('PORTRAIT');
+  const [showAlert, setShowAlert] = useState(false);
 
   const onChange = newWindow => {
     const { width, height } = newWindow.window;
@@ -58,8 +83,18 @@ const Schedule = () => {
     }
   };
 
-  useEffect(() => {
-    console.log(moment().utc(7));
+  useEffect(async () => {
+    // Request Location
+    await requestLocationPermission();
+
+    // Get User Logined
+    await AsyncStorage.getItem('uuid').then(id =>
+      props.getUserById({
+        id,
+        onAttendance,
+        showAlert: () => setShowAlert(true),
+      }),
+    );
 
     if (w < h) {
       setOrientation('PORTRAIT');
@@ -75,8 +110,67 @@ const Schedule = () => {
     };
   });
 
-  const renderTabBar = props => {
-    const inputRange = props.navigationState.routes.map((x, i) => i);
+  React.useEffect(() => {
+    const unsubscribe = props.navigation
+      .dangerouslyGetParent()
+      .addListener('tabPress', e => {
+        if (isChangingProfile()) {
+          e.preventDefault();
+          Alert.alert('Thông báo', 'Bạn có muốn hủy thay đổi?', [
+            { text: 'Không', style: 'cancel' },
+            {
+              text: 'Hủy thay đổi',
+              onPress: () => {
+                props.changeProfile({
+                  data: {
+                    id_User: props.user.userInfo.id,
+                    fullName: props.user.userInfo.fullName,
+                    email: props.user.userInfo.email,
+                    ThumbnailImage: props.user.userInfo.urlImg,
+                  },
+                });
+                props.navigation.navigate('Schedule');
+              },
+            },
+          ]);
+        } else {
+          props.navigation.navigate('Schedule');
+        }
+      });
+
+    return unsubscribe;
+  }, [props.navigation, props.user.userSetting]);
+
+  const isChangingProfile = () => {
+    const { userInfo, userSetting } = props.user;
+    if (
+      userInfo.fullName === userSetting.fullName &&
+      userInfo.email === userSetting.email &&
+      userInfo.urlImg === userSetting.ThumbnailImage
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const onAttendance = () => {
+    props.navigation.reset({
+      index: 0,
+      routes: [{ name: 'AttendanceOff' }],
+    });
+  };
+
+  const onCancel = () => {
+    setShowAlert(false);
+  };
+
+  const onConfirm = () => {
+    props.navigation.navigate('Profile');
+    setShowAlert(false);
+  };
+
+  const renderTabBar = propsTab => {
+    const inputRange = propsTab.navigationState.routes.map((x, i) => i);
 
     return (
       <ScrollView
@@ -88,8 +182,8 @@ const Schedule = () => {
         horizontal={true}
         showsHorizontalScrollIndicator={false}>
         <View style={styles.tabBar}>
-          {props.navigationState.routes.map((route, i) => {
-            const opacity = props.position.interpolate({
+          {propsTab.navigationState.routes.map((route, i) => {
+            const opacity = propsTab.position.interpolate({
               inputRange,
               outputRange: inputRange.map(inputIndex =>
                 inputIndex === i ? 1 : 0.5,
@@ -125,20 +219,43 @@ const Schedule = () => {
   );
 
   return (
-    <TabView
-      lazy
-      navigationState={{ index, routes }}
-      renderScene={renderScene}
-      renderTabBar={renderTabBar}
-      renderLazyPlaceholder={renderLazyPlaceholder}
-      onIndexChange={setIndex}
-      initialLayout={{ width: Dimensions.get('window').width }}
-      style={styles.container}
-    />
+    <View style={{ flex: 1 }}>
+      <TabView
+        lazy
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        renderTabBar={renderTabBar}
+        renderLazyPlaceholder={renderLazyPlaceholder}
+        onIndexChange={setIndex}
+        initialLayout={{ width: Dimensions.get('window').width }}
+        style={styles.container}
+      />
+      <AwesomeAlert
+        show={showAlert}
+        showProgress={false}
+        title="Thông báo"
+        message="Thiết bị chưa đăng ký điểm danh."
+        closeOnTouchOutside={true}
+        closeOnHardwareBackPress={false}
+        showCancelButton={true}
+        showConfirmButton={true}
+        cancelText="Để sau"
+        confirmText="Đăng ký ngay"
+        confirmButtonColor="#DD6B55"
+        onCancelPressed={onCancel}
+        onConfirmPressed={onConfirm}
+      />
+    </View>
   );
 };
 
-export default Schedule;
+const mapStateToProps = state => ({
+  user: state.user,
+});
+
+export default connect(mapStateToProps, { getUserById, changeProfile })(
+  Schedule,
+);
 
 const styles = StyleSheet.create({
   container: {

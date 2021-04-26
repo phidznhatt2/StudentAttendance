@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { withNavigation } from '@react-navigation/compat';
 import {
   StatusBar,
   Dimensions,
   Platform,
   StyleSheet,
-  Text,
   View,
+  Alert,
+  Text,
   TouchableOpacity,
 } from 'react-native';
 import { Header, Icon, Input } from 'react-native-elements';
+import _ from 'lodash';
 
 const { height, width } = Dimensions.get('window');
 const iPhoneX = () =>
@@ -19,20 +21,57 @@ const iPhoneX = () =>
 const ChatButton = ({ isWhite, style, navigation }) => (
   <TouchableOpacity style={[styles.button, style]}>
     <Icon
-      type="evilicon"
+      type="feather"
       size={20}
-      name="comment"
+      name="message-circle"
       color={isWhite ? 'white' : '#4A4A4A'}
     />
     <View middle style={styles.notify} />
   </TouchableOpacity>
 );
 
+const CheckButton = ({ isWhite, style, onPress }) => (
+  <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
+    <Icon
+      type="feather"
+      size={20}
+      name="check"
+      color={isWhite ? 'white' : '#4A4A4A'}
+    />
+  </TouchableOpacity>
+);
+
+const TextButton = ({ style, text, onPress }) => (
+  <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
+    <Text style={{ fontSize: 16, color: '#FF464A' }}>{text}</Text>
+  </TouchableOpacity>
+);
+
 const Headers = props => {
   const handleLeftPress = () => {
-    const { back, navigation } = props;
+    const { back, check, navigation } = props;
 
-    return back ? navigation.goBack() : navigation.openDrawer();
+    if (back) {
+      if (
+        !_.isEmpty(props.scene.route.params) &&
+        props.scene.route.params.isChanging
+      ) {
+        Alert.alert('Thông báo', 'Bạn có muốn hủy thay đổi?', [
+          { text: 'Không', style: 'cancel' },
+          {
+            text: 'Hủy thay đổi',
+            onPress: () => {
+              navigation.goBack();
+              return true;
+            },
+          },
+        ]);
+      } else {
+        return navigation.goBack();
+      }
+    } else {
+      return navigation.openDrawer();
+    }
   };
 
   const renderLeft = () => {
@@ -40,12 +79,15 @@ const Headers = props => {
     const icon = back ? 'chevron-left' : 'navicon';
 
     return (
-      <Icon
-        name={icon}
-        type="evilicon"
-        color="#4A4A4A"
-        onPress={handleLeftPress}
-      />
+      back && (
+        <Icon
+          name={icon}
+          type="evilicon"
+          color="#4A4A4A"
+          size={30}
+          onPress={handleLeftPress}
+        />
+      )
     );
   };
 
@@ -53,29 +95,48 @@ const Headers = props => {
     const { white, title, navigation } = props;
 
     switch (title) {
-      case 'Trang chủ':
-        return [<ChatButton key="chat-home" navigation={navigation} />];
+      case 'Cá nhân':
+        return [
+          <CheckButton
+            key="check-settings"
+            navigation={navigation}
+            onPress={() => props.scene.route.params.onSaveAll()}
+          />,
+        ];
+      case 'Sửa tên':
+        return [
+          <TextButton
+            key="save-name"
+            text="Lưu"
+            onPress={() => props.scene.route.params.onSave()}
+          />,
+        ];
       case 'Khóa học':
-        return [<ChatButton key="chat-courses" navigation={navigation} />];
-      case 'Lịch học':
-        return [<ChatButton key="chat-schedules" navigation={navigation} />];
-      case 'Điểm danh':
-        return [<ChatButton key="chat-attendance" navigation={navigation} />];
-      case 'Bảo mật':
-        return [<ChatButton key="chat-profile" navigation={navigation} />];
-      case 'Cài đặt':
-        return [<ChatButton key="chat-settings" navigation={navigation} />];
+        return [
+          <TextButton
+            key="history-course"
+            text="Lịch sử"
+            onPress={() => navigation.navigate('HistoryCourse')}
+          />,
+        ];
       default:
         break;
     }
   };
 
   const renderSearch = () => {
-    const { navigation } = props;
+    const [search, setSearch] = useState('');
+    const { placeholderSearch } = props;
+
     return (
       <Input
-        placeholder="Tìm kiếm"
-        rightIcon={{ type: 'font-awesome', name: 'search' }}
+        placeholder={placeholderSearch}
+        rightIcon={{
+          type: 'font-awesome',
+          name: 'search',
+          onPress: () => props.scene.route.params.onSearch(search),
+        }}
+        onChangeText={text => setSearch(text)}
       />
     );
   };
@@ -98,23 +159,17 @@ const Headers = props => {
     'Cài đặt',
   ].includes(title);
 
-  const headerStyles = [
-    !noShadow ? styles.shadow : null,
-    transparent ? { backgroundColor: 'rgba(0,0,0,0)' } : null,
-  ];
-
   return (
     <View style={[styles.shadow, styles.container]}>
       <StatusBar translucent barStyle="light-content" backgroundColor="#fff" />
       <Header
-        placement="left"
+        placement="center"
         leftComponent={renderLeft}
-        centerComponent={{ text: title, style: styles.title }}
         rightComponent={renderRight}
+        centerComponent={{ text: title, style: styles.title }}
         containerStyle={styles.header}
         centerContainerStyle={{ alignSelf: 'center' }}
         leftContainerStyle={{ alignSelf: 'center' }}
-        rightContainerStyle={{ alignSelf: 'center' }}
       />
       {renderHeader()}
     </View>
@@ -135,6 +190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'white',
     borderBottomWidth: 0,
+    height: 90,
     paddingVertical: 16,
     zIndex: 5,
   },
@@ -156,8 +212,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    width: '100%',
   },
 });

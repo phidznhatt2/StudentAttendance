@@ -5,6 +5,7 @@ const endPointRegister = 'Register';
 const endPointLogin = 'authenticate';
 const endPointRegisterAcount = `${endPointRegister}/Account`;
 const endPointRegisterEquipment = `${endPointRegister}/Equipment`;
+const endPointRegisterCourse = `${endPointRegister}/CourseByUSer`;
 const endPointEquipmentTeacher = 'EquipmentTeacher';
 const endPointAttendance = '/AttendanceStudent/CreatebyStudent';
 const endPointStatusAttendance = 'PagingBySchedule';
@@ -32,3 +33,8 @@ export const getStatusAttendance = params =>
   api.get(`${endPoint}/${endPointStatusAttendance}?id_Schedule=${params}`);
 
 export const delDeviceUser = params => api.post(`${endPointDelDevice}`, params);
+
+export const registerCourse = params =>
+  api.post(`${endPoint}/${endPointRegisterCourse}`, params);
+
+export const saveProfile = params => api.put(`${endPoint}/Update`, params);
